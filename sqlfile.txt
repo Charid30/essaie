@@ -1,0 +1,147 @@
+-- USERS APP
+
+CREATE TABLE users_user (
+    id SERIAL PRIMARY KEY,
+    password VARCHAR(128) NOT NULL,
+    last_login TIMESTAMP WITH TIME ZONE,
+    email VARCHAR(254) UNIQUE NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    is_staff BOOLEAN NOT NULL DEFAULT FALSE,
+    role VARCHAR(20) NOT NULL DEFAULT 'client'
+);
+
+CREATE TABLE users_user_groups (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users_user(id) ON DELETE CASCADE,
+    group_id INTEGER NOT NULL REFERENCES auth_group(id) ON DELETE CASCADE,
+    UNIQUE(user_id, group_id)
+);
+
+CREATE TABLE users_user_user_permissions (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users_user(id) ON DELETE CASCADE,
+    permission_id INTEGER NOT NULL REFERENCES auth_permission(id) ON DELETE CASCADE,
+    UNIQUE(user_id, permission_id)
+);
+
+CREATE TABLE users_usercontact (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users_user(id) ON DELETE CASCADE,
+    contact_type VARCHAR(20) NOT NULL,
+    value VARCHAR(255) NOT NULL,
+    label VARCHAR(100),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (user_id, contact_type, value)
+);
+
+CREATE TABLE users_profile (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL UNIQUE REFERENCES users_user(id) ON DELETE CASCADE,
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+    photo VARCHAR(100),
+    geographic_zone VARCHAR(100) NOT NULL,
+    bio TEXT,
+    availability BOOLEAN NOT NULL DEFAULT TRUE,
+    subscription_status VARCHAR(20) NOT NULL DEFAULT 'gratuit',
+    verified_badge BOOLEAN NOT NULL DEFAULT FALSE,
+    last_updated TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- TRANSACTIONS APP
+
+CREATE TABLE transactions_transaction (
+    id SERIAL PRIMARY KEY,
+    provider_id INTEGER NOT NULL REFERENCES users_user(id) ON DELETE CASCADE,
+    client_id INTEGER NOT NULL REFERENCES users_user(id) ON DELETE CASCADE,
+    amount_total DECIMAL(10, 2) NOT NULL,
+    commission DECIMAL(5, 2) NOT NULL,
+    status VARCHAR(20) NOT NULL,
+    payment_method VARCHAR(50) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE transactions_subscription (
+    id SERIAL PRIMARY KEY,
+    provider_id INTEGER NOT NULL REFERENCES users_user(id) ON DELETE CASCADE,
+    subscription_type VARCHAR(20) NOT NULL,
+    start_date TIMESTAMP WITH TIME ZONE NOT NULL,
+    end_date TIMESTAMP WITH TIME ZONE NOT NULL,
+    status VARCHAR(20) NOT NULL
+);
+
+-- SKILLS APP
+
+CREATE TABLE skills_skill (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) UNIQUE NOT NULL,
+    description TEXT,
+    category VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE skills_userskill (
+    id SERIAL PRIMARY KEY,
+    profile_id INTEGER NOT NULL REFERENCES users_profile(id) ON DELETE CASCADE,
+    skill_id INTEGER NOT NULL REFERENCES skills_skill(id) ON DELETE CASCADE,
+    level VARCHAR(20) NOT NULL,
+    years_experience INTEGER NOT NULL DEFAULT 0,
+    details TEXT
+);
+
+CREATE TABLE skills_cv (
+    id SERIAL PRIMARY KEY,
+    profile_id INTEGER NOT NULL REFERENCES users_profile(id) ON DELETE CASCADE,
+    file VARCHAR(100) NOT NULL,
+    uploaded_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    description VARCHAR(255)
+);
+
+-- RATING APP
+
+CREATE TABLE rating_rating (
+    id SERIAL PRIMARY KEY,
+    transaction_id INTEGER NOT NULL REFERENCES transactions_transaction(id) ON DELETE CASCADE,
+    rater_id INTEGER NOT NULL REFERENCES users_user(id) ON DELETE CASCADE,
+    rated_id INTEGER NOT NULL REFERENCES users_user(id) ON DELETE CASCADE,
+    rating_value INTEGER NOT NULL,
+    comment TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- MESSAGING APP
+
+CREATE TABLE messaging_conversation (
+    id SERIAL PRIMARY KEY,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE messaging_conversation_participants (
+    id SERIAL PRIMARY KEY,
+    conversation_id INTEGER NOT NULL REFERENCES messaging_conversation(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users_user(id) ON DELETE CASCADE,
+    UNIQUE(conversation_id, user_id)
+);
+
+CREATE TABLE messaging_message (
+    id SERIAL PRIMARY KEY,
+    conversation_id INTEGER NOT NULL REFERENCES messaging_conversation(id) ON DELETE CASCADE,
+    sender_id INTEGER NOT NULL REFERENCES users_user(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    message_type VARCHAR(10) NOT NULL DEFAULT 'texte',
+    timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    read BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+-- ADVERTISING APP
+
+CREATE TABLE advertising_advertisement (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(200) NOT NULL,
+    description TEXT NOT NULL,
+    image VARCHAR(100),
+    target_segment VARCHAR(200) NOT NULL,
+    start_date TIMESTAMP WITH TIME ZONE NOT NULL,
+    end_date TIMESTAMP WITH TIME ZONE NOT NULL,
+    status VARCHAR(20) NOT NULL
+);
